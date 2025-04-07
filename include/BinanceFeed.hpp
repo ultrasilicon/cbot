@@ -3,14 +3,21 @@
 
 #include "Feed.hpp"
 #include "WebSocket.hpp"
+
 #include <thread>
 #include <functional>
 #include <string>
 
+/**
+ * @class BinanceFeed
+ * @brief Handles real-time market data feed from Binance via WebSocket.
+ */
 class BinanceFeed : public Feed {
 public:
     BinanceFeed(const std::string &base, const std::string &quote);
     ~BinanceFeed();
+
+    // TODO: std::function<void(const BookTicker &)> should be typedef'ed in base class
     void start(std::function<void(const BookTicker &)> callback) override;
 
 private:

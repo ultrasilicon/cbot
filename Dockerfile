@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     libssl-dev \
     nlohmann-json3-dev \
-    cmake
+    cmake \
+    gnuplot
 
 # Create and set the working directory
 WORKDIR /opt/app

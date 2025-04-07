@@ -6,6 +6,10 @@
 #include <condition_variable>
 #include <atomic>
 
+/**
+ * @class ServiceRunner
+ * @brief Manages the lifecycle of cbot app by handling signals.
+ */
 class ServiceRunner
 {
 public:

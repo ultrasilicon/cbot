@@ -2,6 +2,7 @@
 #include "Utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/beast/core.hpp>
+#include <functional>
 
 typedef boost::system::error_code error_code;
 
@@ -50,7 +51,7 @@ void WebSocket::on_dns_resolve(error_code ec, tcp::resolver::results_type result
         ws_.next_layer().next_layer(),
         results.begin(),
         results.end(),
-        cbot::bind(&WebSocket::on_connect, this));
+        std::bind(&WebSocket::on_connect, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void WebSocket::on_connect(error_code ec, tcp::resolver::results_type::iterator)
