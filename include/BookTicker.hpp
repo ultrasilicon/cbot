@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <chrono>
 
 /**
  * @class BookTicker
@@ -29,7 +30,7 @@ public:
         , bidQty(bidQty)
         , askPrice(askPrice)
         , askQty(askQty)
-        , timestamp(0.0)
+        , timestamp(std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count())
     {}
 
     BookTicker(
@@ -47,12 +48,12 @@ public:
         , timestamp(t)
     {}
 
-    // TODO: use ostream operator overload
-    void print() const
-    {
-        std::cout << "Time: " << timestamp << " | Symbol: " << symbol
-                  << " | Bid: " << bidPrice << " (" << bidQty << ")"
-                  << " | Ask: " << askPrice << " (" << askQty << ")" << std::endl;
+    friend std::ostream &operator<<(std::ostream &os, const BookTicker &ticker) {
+        os << "Time: " << ticker.timestamp
+           << " | Symbol: " << ticker.symbol
+           << " | Bid: " << ticker.bidPrice << " (" << ticker.bidQty << ")"
+           << " | Ask: " << ticker.askPrice << " (" << ticker.askQty << ")";
+        return os;
     }
 };
 

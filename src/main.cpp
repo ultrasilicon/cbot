@@ -26,7 +26,9 @@ static std::mutex g_data_mutex;
 static std::mutex g_plot_mutex;
 
 // Update the plot using all available ticker data.
-void updatePlot() {
+// The time axis will be computed as (BookTicker.timestamp - start_time)
+// where start_time is converted to seconds.
+void updatePlot(const std::chrono::steady_clock::time_point &start_time) {
     std::lock_guard<std::mutex> lock(g_plot_mutex);
 
     // I had to use ChatGPT to generate all GNU Plot code like the following string,
@@ -48,15 +50,21 @@ void updatePlot() {
     std::vector<std::pair<double, double>> binance_bid_data;
     std::vector<std::pair<double, double>> binance_ask_data;
 
+    // Convert start_time to seconds.
+    double start_time_sec = std::chrono::duration<double>(start_time.time_since_epoch()).count();
+
     {
         std::lock_guard<std::mutex> data_lock(g_data_mutex);
+        // Compute elapsed time for each ticker point.
         for (const auto &kt : g_kraken_tickers) {
-            kraken_bid_data.push_back({kt.timestamp, kt.bidPrice});
-            kraken_ask_data.push_back({kt.timestamp, kt.askPrice});
+            double elapsed = kt.timestamp - start_time_sec;
+            kraken_bid_data.push_back({elapsed, kt.bidPrice});
+            kraken_ask_data.push_back({elapsed, kt.askPrice});
         }
         for (const auto &bt : g_binance_tickers) {
-            binance_bid_data.push_back({bt.timestamp, bt.bidPrice});
-            binance_ask_data.push_back({bt.timestamp, bt.askPrice});
+            double elapsed = bt.timestamp - start_time_sec;
+            binance_bid_data.push_back({elapsed, bt.bidPrice});
+            binance_ask_data.push_back({elapsed, bt.askPrice});
         }
     }
 
@@ -86,32 +94,22 @@ void addBinanceTicker(const BookTicker &ticker) {
 int main() {
     auto start_time = std::chrono::steady_clock::now();
 
-    // Callback for Kraken: include the current timestamp, store it, and update the plot.
+    // Callback for Kraken: store ticker update and update the plot.
     auto kraken_feed_cb = [start_time](const BookTicker &t) {
-        // TODO: move this into BookTicker constructor
-        auto now = std::chrono::steady_clock::now();
-        double t_sec = std::chrono::duration<double>(now - start_time).count();
-
-        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty, t_sec);
-        std::cout << "(Kraken) update received: ";
-        ticker.print();
+        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty);
+        std::cout << "(Kraken)  update received: " << ticker << std::endl;
 
         addKrakenTicker(ticker);
-        updatePlot();
+        updatePlot(start_time);
     };
 
-    // Callback for Binance: include the current timestamp, store it, and update the plot.
+    // Callback for Binance: store ticker update and update the plot.
     auto binance_feed_cb = [start_time](const BookTicker &t) {
-        // TODO: move this into BookTicker constructor
-        auto now = std::chrono::steady_clock::now();
-        double t_sec = std::chrono::duration<double>(now - start_time).count();
-
-        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty, t_sec);
-        std::cout << "(Binance) update received: ";
-        ticker.print();
+        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty);
+        std::cout << "(Binance) update received: " << ticker << std::endl;
 
         addBinanceTicker(ticker);
-        updatePlot();
+        updatePlot(start_time);
     };
 
     KrakenFeed kraken("BTC", "USD");
