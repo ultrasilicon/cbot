@@ -6,13 +6,12 @@
 
 int main() {
     auto kraken_feed_cb = [](const BookTicker &ticker) {
-        std::cout << "(Kraken) update received: ";
-        ticker.print();
+        std::cout << "(Kraken)  update received: " << ticker << std::endl;
     };
 
     auto binance_feed_cb = [](const BookTicker &ticker) {
-        std::cout << "(Binance) update received: ";
-        ticker.print();
+        std::cout << "(Binance)  update received: " << ticker << std::endl;
+
     };
 
     KrakenFeed kraken("BTC", "USDT");
