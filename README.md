@@ -6,7 +6,7 @@ A CEX analytics bot in C++ for fun
 
 - Boost libraries
 - OpenSSL
-- GnuPlot
+- `cpp-httplib`
 
 ## Build Dependency
 
@@ -21,7 +21,7 @@ brew install boost openssl gnuplot cmake
 Install dependencies using APT:
 
 ```sh
-sudo apt install -y libboost-all-dev libssl-dev gnuplot nlohmann-json3-dev build-essential cmake
+sudo apt install -y libboost-all-dev libssl-dev gnuplot nlohmann-json3-dev build-essential cmake git
 ```
 
 ## Build Instructions
@@ -40,9 +40,9 @@ make -j$(nproc)
 ```
 
 ### docker
-> Note: docker container has no GUI support (requires display device redirection support)
+
 ```sh
 docker build . -t cbot
-docker run -it cbot
+docker run -it -p 18080:18080 cbot
 ```
 

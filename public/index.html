@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://unpkg.com/lightweight-charts@3.4.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body style="background-color: #222;">
+  <div id="chart" style="width:100%; height:400px;"></div>
+
+</body>
+
+<script>
+  const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+    layout: {
+      backgroundColor: '#333',
+      textColor: '#CCC',
+    },
+    grid: {
+      vertLines: { color: '#555' },
+      horzLines: { color: '#555' },
+    },
+    timeScale: {
+      timeVisible: true,
+      secondsVisible: true,
+      rightOffset: 25,
+      barSpacing: 3,
+    },
+  });
+
+  const series = {};
+  series['Binance_bid'] = chart.addLineSeries({ color: 'darkgreen', title: 'Binance Bid' });
+  series['Binance_ask'] = chart.addLineSeries({ color: 'darkred', title: 'Binance Ask' });
+  series['Kraken_bid']  = chart.addLineSeries({ color: 'lightgreen', title: 'Kraken Bid'  });
+  series['Kraken_ask']  = chart.addLineSeries({ color: 'lightcoral', title: 'Kraken Ask'  });
+
+  // add EventSource to receive ws updates
+  const evtSrc = new EventSource('/ticker-events');
+  evtSrc.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    const timestamp = Math.floor(Date.now() / 1000); // seconds
+    ['Binance', 'Kraken'].forEach(ex => {
+      if (!msg[ex]) return;
+      series[`${ex}_bid`].update({ time: timestamp, value: msg[ex].bid });
+      series[`${ex}_ask`].update({ time: timestamp, value: msg[ex].ask });
+    });
+  };
+  evtSrc.onerror = err => console.error('EventSource failed:', err);
+
+  window.addEventListener('resize', () => {
+    chart.resize(document.getElementById('chart').clientWidth, 400);
+  });
+</script>
+</html>

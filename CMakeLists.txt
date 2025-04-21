@@ -4,9 +4,26 @@ project(cbot VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/deps")
+
+# Copy public/index.html into the build directory
+configure_file(
+    ${CMAKE_SOURCE_DIR}/public/index.html   # source
+    ${CMAKE_BINARY_DIR}/index.html          # destination in build/
+    COPYONLY
+)
+
 find_package(Boost REQUIRED COMPONENTS system thread iostreams)
 find_package(OpenSSL REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+  httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(httplib)
+
 
 set(SOURCES
     src/main.cpp
@@ -35,4 +52,5 @@ target_link_libraries(${PROJECT_NAME}
         OpenSSL::SSL
         OpenSSL::Crypto
         ${Boost_LIBRARIES}
+        httplib::httplib
 )

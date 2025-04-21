@@ -1,126 +1,130 @@
+#include "httplib.h"
+#include <nlohmann/json.hpp>
 #include <iostream>
-#include <chrono>
-#include <thread>
+#include <fstream>
+#include <sstream>
+#include <map>
 #include <vector>
 #include <mutex>
-#include <atomic>
-#include <utility>
+#include <thread>
+#include <chrono>
 
 #include "KrakenFeed.hpp"
 #include "BinanceFeed.hpp"
 #include "ServiceRunner.hpp"
 #include "BookTicker.hpp"
-#include "Utils.hpp"
 
-#include "gnuplot-iostream.h"
+using json = nlohmann::json;
+using namespace httplib;
 
-// For now we use gnuplot-iostream to plot the data.
-// Used ref example here: https://stahlke.org/dan/gnuplot-iostream/
-static Gnuplot gp;
+class ChartServer {
+public:
+    ChartServer(std::map<std::string, std::vector<BookTicker>>& data_map,
+                std::mutex& mtx,
+                const std::string& host = "0.0.0.0",
+                int port = 18080)
+        : data_map_(data_map)
+        , mtx_(mtx)
+        , host_(host)
+        , port_(port)
+    {}
 
-static std::vector<BookTicker> g_kraken_tickers;
-static std::vector<BookTicker> g_binance_tickers;
+    void start() {
+        std::string html;
+        {
+            std::ifstream ifs("index.html");
+            if (!ifs) {
+                std::cerr << "Failed to open index.html" << std::endl;
+                return;
+            }
 
-// TODO: does C++ has some message passing mechanism? I hate mutexes.
-static std::mutex g_data_mutex;
-static std::mutex g_plot_mutex;
-
-// Update the plot using all available ticker data.
-// The time axis will be computed as (BookTicker.timestamp - start_time)
-// where start_time is converted to seconds.
-void updatePlot(const std::chrono::steady_clock::time_point &start_time) {
-    std::lock_guard<std::mutex> lock(g_plot_mutex);
-
-    // I had to use ChatGPT to generate all GNU Plot code like the following string,
-    // because it's way out of our interest to explore how to do this.
-    AI_GENERATED {
-        gp << "set title 'Realtime Price Difference'\n";
-        gp << "set xlabel 'Time (s)'\n";
-        gp << "set ylabel 'Price'\n";
-        gp << "set grid\n";
-        gp << "set autoscale\n";
-        gp << "set style line 1 lc rgb '#90EE90' lw 2\n";
-        gp << "set style line 2 lc rgb '#F08080' lw 2\n";
-        gp << "set style line 3 lc rgb '#006400' lw 2\n";
-        gp << "set style line 4 lc rgb '#8B0000' lw 2\n";
-    }
-
-    std::vector<std::pair<double, double>> kraken_bid_data;
-    std::vector<std::pair<double, double>> kraken_ask_data;
-    std::vector<std::pair<double, double>> binance_bid_data;
-    std::vector<std::pair<double, double>> binance_ask_data;
-
-    // Convert start_time to seconds.
-    double start_time_sec = std::chrono::duration<double>(start_time.time_since_epoch()).count();
-
-    {
-        std::lock_guard<std::mutex> data_lock(g_data_mutex);
-        // Compute elapsed time for each ticker point.
-        for (const auto &kt : g_kraken_tickers) {
-            double elapsed = kt.timestamp - start_time_sec;
-            kraken_bid_data.push_back({elapsed, kt.bidPrice});
-            kraken_ask_data.push_back({elapsed, kt.askPrice});
+            std::stringstream ss;
+            ss << ifs.rdbuf();
+            html = ss.str();
         }
-        for (const auto &bt : g_binance_tickers) {
-            double elapsed = bt.timestamp - start_time_sec;
-            binance_bid_data.push_back({elapsed, bt.bidPrice});
-            binance_ask_data.push_back({elapsed, bt.askPrice});
-        }
+
+        // serve HTML at /
+        svr_.Get("/", [html](const Request&, Response& res) {
+            res.set_content(html, "text/html");
+        });
+
+        // ws stream for ticker data
+        svr_.Get("/ticker-events", [this](const Request&, Response& res) {
+            res.set_header("Content-Type", "text/event-stream");
+            res.set_header("Cache-Control", "no-cache");
+
+            res.set_chunked_content_provider(
+                "text/event-stream",
+                [this](size_t _offset, DataSink &sink) {
+                    while (true) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        json j;
+                        {
+                            std::lock_guard<std::mutex> lk(mtx_);
+                            for (auto& kv : data_map_) {
+                                const auto& exchange = kv.first;
+                                const auto& vec  = kv.second;
+                                if (vec.empty()) continue;
+
+                                const auto& bt = vec.back();
+                                j[exchange] = {
+                                    {"timestamp", bt.timestamp},
+                                    {"bid", bt.bidPrice},
+                                    {"ask", bt.askPrice}
+                                };
+                            }
+                        }
+                        std::string msg = "data: " + j.dump() + "\n\n";
+                        if (!sink.write(msg.c_str(), msg.size())) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            );
+        });
+
+        // start the server
+        std::thread([this](){ svr_.listen(host_.c_str(), port_); }).detach();
     }
 
-    AI_GENERATED {
-        gp << "plot '-' with lines ls 1 title 'Kraken Bid', "
-            "'-' with lines ls 2 title 'Kraken Ask', "
-            "'-' with lines ls 3 title 'Binance Bid', "
-            "'-' with lines ls 4 title 'Binance Ask'\n";
-    }
-
-    gp.send1d(kraken_bid_data);
-    gp.send1d(kraken_ask_data);
-    gp.send1d(binance_bid_data);
-    gp.send1d(binance_ask_data);
-}
-
-void addKrakenTicker(const BookTicker &ticker) {
-    std::lock_guard<std::mutex> lock(g_data_mutex);
-    g_kraken_tickers.push_back(ticker);
-}
-
-void addBinanceTicker(const BookTicker &ticker) {
-    std::lock_guard<std::mutex> lock(g_data_mutex);
-    g_binance_tickers.push_back(ticker);
-}
+private:
+    Server svr_;
+    std::map<std::string, std::vector<BookTicker>>& data_map_;
+    std::mutex& mtx_;
+    std::string host_;
+    int port_;
+};
 
 int main() {
-    auto start_time = std::chrono::steady_clock::now();
+    std::map<std::string, std::vector<BookTicker>> data_map;
+    std::mutex data_mtx;
 
-    // Callback for Kraken: store ticker update and update the plot.
-    auto kraken_feed_cb = [start_time](const BookTicker &t) {
-        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty);
-        std::cout << "(Kraken)  update received: " << ticker << std::endl;
-
-        addKrakenTicker(ticker);
-        updatePlot(start_time);
+    auto kraken_cb = [&](const BookTicker& t) {
+        std::lock_guard<std::mutex> lk(data_mtx);
+        auto& vec = data_map["Kraken"];
+        vec.push_back(t);
+        // limit vec size
+        if (vec.size() > 1000) vec.erase(vec.begin());
     };
 
-    // Callback for Binance: store ticker update and update the plot.
-    auto binance_feed_cb = [start_time](const BookTicker &t) {
-        BookTicker ticker(t.symbol, t.bidPrice, t.bidQty, t.askPrice, t.askQty);
-        std::cout << "(Binance) update received: " << ticker << std::endl;
-
-        addBinanceTicker(ticker);
-        updatePlot(start_time);
+    auto binance_cb = [&](const BookTicker& t) {
+        std::lock_guard<std::mutex> lk(data_mtx);
+        auto& vec = data_map["Binance"];
+        vec.push_back(t);
+        // limit vec size
+        if (vec.size() > 1000) vec.erase(vec.begin());
     };
 
-    KrakenFeed kraken("BTC", "USD");
-    BinanceFeed binance("BTC", "USD");
+    KrakenFeed kraken("BTC", "USDT");
+    BinanceFeed binance("BTC", "USDT");
+    kraken.start(kraken_cb);
+    binance.start(binance_cb);
 
-    kraken.start(kraken_feed_cb);
-    binance.start(binance_feed_cb);
+    ChartServer server(data_map, data_mtx, "0.0.0.0", 18080);
+    server.start();
 
-    // SIGINT handler seems to be failing for some reason...
     ServiceRunner runner;
     runner.run();
-
     return 0;
 }
