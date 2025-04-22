@@ -27,6 +27,7 @@ FetchContent_MakeAvailable(httplib)
 
 set(SOURCES
     src/main.cpp
+    src/ChartServer.cpp
     src/KrakenFeed.cpp
     src/BinanceFeed.cpp
     src/ServiceRunner.cpp
