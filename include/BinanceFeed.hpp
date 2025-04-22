@@ -10,7 +10,7 @@
  */
 class BinanceFeed : public Feed {
 public:
-    BinanceFeed(const std::string &base, const std::string &quote);
+    BinanceFeed(const std::string &base_asset, const std::string &quote_asset);
     ~BinanceFeed();
 
     void start(BookTickerUpdateCallback callback) override;

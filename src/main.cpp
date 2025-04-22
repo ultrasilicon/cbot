@@ -27,7 +27,7 @@ int main() {
         auto& vec = data_map["Kraken"];
         vec.push_back(t);
         // limit vec size
-        if (vec.size() > 1000) vec.erase(vec.begin());
+        if (vec.size() > 10000) vec.erase(vec.begin());
     };
 
     auto binance_cb = [&](const BookTicker& t) {
@@ -35,7 +35,7 @@ int main() {
         auto& vec = data_map["Binance"];
         vec.push_back(t);
         // limit vec size
-        if (vec.size() > 1000) vec.erase(vec.begin());
+        if (vec.size() > 10000) vec.erase(vec.begin());
     };
 
     KrakenFeed kraken("BTC", "USDT");

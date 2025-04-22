@@ -9,7 +9,7 @@
  */
 class KrakenFeed : public Feed {
 public:
-    KrakenFeed(const std::string &base, const std::string &quote);
+    KrakenFeed(const std::string &base_asset, const std::string &quote_asset);
     ~KrakenFeed();
 
     void start(BookTickerUpdateCallback callback) override;

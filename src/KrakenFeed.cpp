@@ -6,8 +6,8 @@
 using json = nlohmann::json;
 namespace asio = boost::asio;
 
-KrakenFeed::KrakenFeed(const std::string &base, const std::string &quote)
-    : Feed(base, quote, boost::asio::ssl::context::tlsv12_client)
+KrakenFeed::KrakenFeed(const std::string &base_asset, const std::string &quote_asset)
+    : Feed(base_asset, quote_asset, boost::asio::ssl::context::tlsv12_client)
 {
 }
 
@@ -38,7 +38,7 @@ void KrakenFeed::on_connected(boost::system::error_code ec)
     j["method"] = "subscribe";
     j["params"] = {
         {"channel", "ticker"},
-        {"symbol", {base_ + "/" + quote_}}
+        {"symbol", {base_asset_ + "/" + quote_asset_}}
     };
     std::string msg = j.dump();
 
@@ -82,7 +82,7 @@ void KrakenFeed::on_read(boost::system::error_code ec, std::size_t size, const s
                         double askPrice = ticker["ask"].get<double>();
                         double askQty = ticker["ask_qty"].get<double>();
                         std::string symbol =
-                            ticker.contains("symbol") ? ticker["symbol"].get<std::string>() : (base_ + "/" + quote_);
+                            ticker.contains("symbol") ? ticker["symbol"].get<std::string>() : (base_asset_ + "/" + quote_asset_);
                         BookTicker bt(symbol, bidPrice, bidQty, askPrice, askQty);
                         if (callback_)
                             callback_(bt);

@@ -12,7 +12,7 @@
 
 /**
  * @class Feed
- * @brief Abstract base class for handling market data feeds.
+ * @brief Abstract base_asset class for handling market data feeds.
  */
 class Feed {
 public:
@@ -31,7 +31,7 @@ public:
     virtual void on_read(boost::system::error_code ec, std::size_t size, const std::string &data) = 0;
 
 protected:
-    std::string base_, quote_;
+    std::string base_asset_, quote_asset_;
     boost::asio::io_context ioc_;
     boost::asio::ssl::context ssl_ctx_;
     WebSocket ws_;
@@ -39,14 +39,14 @@ protected:
     BookTickerUpdateCallback callback_;
 
     /**
-     * @brief Constructs a Feed object with the given base and quote symbols.
-     * @param base The base currency or asset.
-     * @param quote The quote currency or asset.
+     * @brief Constructs a Feed object with the given base_asset and quote_asset symbols.
+     * @param base_asset The base_asset currency or asset.
+     * @param quote_asset The quote_asset currency or asset.
      * @param ssl_method The selected SSL method.
      */
-    Feed(const std::string &base, const std::string &quote, boost::asio::ssl::context::method ssl_method)
-        : base_(base),
-          quote_(quote),
+    Feed(const std::string &base_asset, const std::string &quote_asset, boost::asio::ssl::context::method ssl_method)
+        : base_asset_(base_asset),
+          quote_asset_(quote_asset),
           ioc_(),
           ssl_ctx_(ssl_method),
           ws_(ioc_, ssl_ctx_)

@@ -8,8 +8,8 @@
 using json = nlohmann::json;
 namespace asio = boost::asio;
 
-BinanceFeed::BinanceFeed(const std::string &base, const std::string &quote)
-    : Feed(base, quote, boost::asio::ssl::context::tlsv12_client)
+BinanceFeed::BinanceFeed(const std::string &base_asset, const std::string &quote_asset)
+    : Feed(base_asset, quote_asset, boost::asio::ssl::context::tlsv12_client)
 {
 }
 
@@ -37,9 +37,9 @@ void BinanceFeed::on_connected(boost::system::error_code ec)
     }
 
     std::string symbol;
-    for (auto c : base_)
+    for (auto c : base_asset_)
         symbol.push_back(static_cast<char>(std::tolower(c)));
-    for (auto c : quote_)
+    for (auto c : quote_asset_)
         symbol.push_back(static_cast<char>(std::tolower(c)));
     std::string subscription = symbol + "@bookTicker";
 
