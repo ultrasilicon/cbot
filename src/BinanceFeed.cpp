@@ -1,7 +1,6 @@
 #include "BinanceFeed.hpp"
 #include "BookTicker.hpp"
 #include "Utils.hpp"
-
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <cctype>
@@ -10,9 +9,7 @@ using json = nlohmann::json;
 namespace asio = boost::asio;
 
 BinanceFeed::BinanceFeed(const std::string &base, const std::string &quote)
-    : base_(base), quote_(quote),
-      ssl_ctx_(boost::asio::ssl::context::tlsv12_client),
-      ws_(ioc_, ssl_ctx_)
+    : Feed(base, quote, boost::asio::ssl::context::tlsv12_client)
 {
 }
 
@@ -23,13 +20,12 @@ BinanceFeed::~BinanceFeed()
         io_thread_.join();
 }
 
-void BinanceFeed::start(std::function<void(const BookTicker &)> callback)
+void BinanceFeed::start(BookTickerUpdateCallback callback)
 {
     callback_ = callback;
     ws_.connect("stream.binance.us", "9443", "/ws",
                 cbot::bind(&BinanceFeed::on_connected, this));
-    io_thread_ = std::thread([this]()
-                             { ioc_.run(); });
+    io_thread_ = std::thread([this]() { ioc_.run(); });
 }
 
 void BinanceFeed::on_connected(boost::system::error_code ec)
@@ -42,10 +38,11 @@ void BinanceFeed::on_connected(boost::system::error_code ec)
 
     std::string symbol;
     for (auto c : base_)
-        symbol.push_back(std::tolower(c));
+        symbol.push_back(static_cast<char>(std::tolower(c)));
     for (auto c : quote_)
-        symbol.push_back(std::tolower(c));
+        symbol.push_back(static_cast<char>(std::tolower(c)));
     std::string subscription = symbol + "@bookTicker";
+
     json j;
     j["method"] = "SUBSCRIBE";
     j["params"] = {subscription};
@@ -55,7 +52,7 @@ void BinanceFeed::on_connected(boost::system::error_code ec)
     ws_.write(msg, cbot::bind(&BinanceFeed::on_write, this));
 }
 
-void BinanceFeed::on_write(boost::system::error_code ec, std::size_t _size)
+void BinanceFeed::on_write(boost::system::error_code ec, std::size_t size)
 {
     if (ec)
     {
@@ -65,7 +62,7 @@ void BinanceFeed::on_write(boost::system::error_code ec, std::size_t _size)
     ws_.read(cbot::bind(&BinanceFeed::on_read, this));
 }
 
-void BinanceFeed::on_read(boost::system::error_code ec, std::size_t _size, const std::string &data)
+void BinanceFeed::on_read(boost::system::error_code ec, std::size_t size, const std::string &data)
 {
     if (ec)
     {
@@ -75,8 +72,11 @@ void BinanceFeed::on_read(boost::system::error_code ec, std::size_t _size, const
     try
     {
         auto j = json::parse(data);
-        if (j.contains("s") && j.contains("b") && j.contains("a") &&
-            j.contains("B") && j.contains("A"))
+        if (j.contains("s") &&
+            j.contains("b") &&
+            j.contains("a") &&
+            j.contains("B") &&
+            j.contains("A"))
         {
             double bidPrice = std::stod(j["b"].get<std::string>());
             double bidQty = std::stod(j["B"].get<std::string>());
