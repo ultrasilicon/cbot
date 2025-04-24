@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <nlohmann/json.hpp>
 
 /**
  * @class BookTicker
@@ -54,6 +55,17 @@ public:
            << " | Bid: " << ticker.bidPrice << " (" << ticker.bidQty << ")"
            << " | Ask: " << ticker.askPrice << " (" << ticker.askQty << ")";
         return os;
+    }
+
+    friend void to_json(nlohmann::json& j, const BookTicker& bt) {
+        j = nlohmann::json{
+            {"symbol", bt.symbol},
+            {"bidPrice", bt.bidPrice},
+            {"bidQty", bt.bidQty},
+            {"askPrice", bt.askPrice},
+            {"askQty", bt.askQty},
+            {"timestamp", bt.timestamp}
+        };
     }
 };
 

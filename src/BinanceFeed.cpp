@@ -69,6 +69,7 @@ void BinanceFeed::on_read(boost::system::error_code ec, std::size_t size, const 
         std::cerr << "Binance read error: " << ec.message() << "\n";
         return;
     }
+
     try
     {
         auto j = json::parse(data);
