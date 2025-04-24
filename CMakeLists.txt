@@ -27,18 +27,19 @@ FetchContent_MakeAvailable(httplib)
 
 set(SOURCES
     src/main.cpp
+    src/Cbot.cpp
     src/ChartServer.cpp
     src/KrakenFeed.cpp
     src/BinanceFeed.cpp
-    src/ServiceRunner.cpp
     src/WebSocket.cpp
 )
 
 set(HEADERS
+    include/Cbot.hpp
+    include/Algorithm.hpp
     include/BookTicker.hpp
     include/KrakenFeed.hpp
     include/BinanceFeed.hpp
-    include/ServiceRunner.hpp
     include/WebSocket.hpp
 )
 
