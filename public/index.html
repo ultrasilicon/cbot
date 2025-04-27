@@ -32,13 +32,15 @@
   series['Binance_ask'] = chart.addLineSeries({ color: 'darkred', title: 'Binance Ask' });
   series['Kraken_bid']  = chart.addLineSeries({ color: 'lightgreen', title: 'Kraken Bid'  });
   series['Kraken_ask']  = chart.addLineSeries({ color: 'lightcoral', title: 'Kraken Ask'  });
+  series['Coinbase_bid'] = chart.addLineSeries({ color: 'deepskyblue', title: 'Coinbase Bid' });
+  series['Coinbase_ask'] = chart.addLineSeries({ color: 'violet', title: 'Coinbase Ask'  });
 
   // add EventSource to receive ws updates
   const evtSrc = new EventSource('/ticker-events');
   evtSrc.onmessage = e => {
     const msg = JSON.parse(e.data);
     const timestamp = Math.floor(Date.now() / 1000); // seconds
-    ['Binance', 'Kraken'].forEach(ex => {
+    ['Binance', 'Kraken', 'Coinbase'].forEach(ex => {
       if (!msg[ex]) return;
       series[`${ex}_bid`].update({ time: timestamp, value: msg[ex].bid });
       series[`${ex}_ask`].update({ time: timestamp, value: msg[ex].ask });

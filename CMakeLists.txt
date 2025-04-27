@@ -31,6 +31,7 @@ set(SOURCES
     src/ChartServer.cpp
     src/KrakenFeed.cpp
     src/BinanceFeed.cpp
+    src/CoinbaseFeed.cpp
     src/WebSocket.cpp
 )
 
@@ -40,6 +41,7 @@ set(HEADERS
     include/BookTicker.hpp
     include/KrakenFeed.hpp
     include/BinanceFeed.hpp
+    include/CoinbaseFeed.hpp
     include/WebSocket.hpp
 )
 

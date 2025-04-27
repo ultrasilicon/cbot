@@ -2,6 +2,7 @@
 #include "Algorithm.hpp"
 #include "KrakenFeed.hpp"
 #include "BinanceFeed.hpp"
+#include "CoinbaseFeed.hpp"
 #include "ChartServer.hpp"
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -76,6 +77,8 @@ void Cbot::start_services() {
                    ? new KrakenFeed(base_asset_, quote_asset_)
                    : (exchange == "Binance")
                    ? new BinanceFeed(base_asset_, quote_asset_)
+                   : (exchange == "Coinbase")
+                   ? new CoinbaseFeed(base_asset_, quote_asset_)
                    : (Feed*) nullptr;
 
         if (feed) {
@@ -192,7 +195,7 @@ void Cbot::handle_input(MenuOption opt) {
             break;
         }
         case MenuOption::AddExchange: {
-            std::string newExch = input("Enter exchange to add (e.g., Kraken/Binance): ");
+            std::string newExch = input("Enter exchange name to add (supported exchanges: Kraken, Binance, Coinbase): ");
             if (!newExch.empty()) {
                 if (std::find(exchanges_.begin(), exchanges_.end(), newExch) != exchanges_.end()) {
                     std::cout << "\nExchange already exists!\n";
