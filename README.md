@@ -2,6 +2,13 @@
 
 A CEX analytics bot in C++ for fun
 
+
+## Screenshots
+
+![webui](img/webui.png)
+![tui](img/tui.png)
+
+
 ## Dependencies
 
 - Boost libraries
@@ -11,24 +18,32 @@ A CEX analytics bot in C++ for fun
 ## Build Dependency
 
 ### macOS
+
 Install dependencies using Homebrew:
+
 ```sh
-brew install boost openssl gnuplot cmake
+brew install boost openssl cmake
 ```
 
 ### Debian/Ubuntu
 
-Install dependencies using APT:
+Install dependencies using apt:
 
 ```sh
-sudo apt install -y libboost-all-dev libssl-dev gnuplot nlohmann-json3-dev build-essential cmake git
+sudo apt install -y \
+    libboost-all-dev \
+    libssl-dev \
+    nlohmann-json3-dev \
+    build-essential \
+    cmake \
+    git
 ```
 
 ## Build Instructions
 
 ### Local build
 
-Open a terminal and run the following commands:
+Here are the example build commands for Linux and macOS:
 
 ```sh
 mkdir build && cd build
@@ -38,11 +53,25 @@ make -j$(nproc)
 # start the bot with:
 ./cbot
 ```
+* Windows platform is not supported, please use Docker to build and run `cbot` on Windows.
 
-### docker
+### Docker build
 
 ```sh
 docker build . -t cbot
 docker run -it -p 18080:18080 cbot
 ```
 
+## Get Started
+
+Live Chart Web Server:
+
+```sh
+http://localhost:18080/
+```
+
+Log path:
+
+```sh
+~/.local/share/cbot/logs/cbot.log
+```

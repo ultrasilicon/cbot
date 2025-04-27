@@ -28,12 +28,12 @@
   });
 
   const series = {};
-  series['Binance_bid'] = chart.addLineSeries({ color: 'darkgreen', title: 'Binance Bid' });
-  series['Binance_ask'] = chart.addLineSeries({ color: 'darkred', title: 'Binance Ask' });
-  series['Kraken_bid']  = chart.addLineSeries({ color: 'lightgreen', title: 'Kraken Bid'  });
-  series['Kraken_ask']  = chart.addLineSeries({ color: 'lightcoral', title: 'Kraken Ask'  });
-  series['Coinbase_bid'] = chart.addLineSeries({ color: 'deepskyblue', title: 'Coinbase Bid' });
-  series['Coinbase_ask'] = chart.addLineSeries({ color: 'violet', title: 'Coinbase Ask'  });
+  series['Binance_bid'] = chart.addLineSeries({ color: 'darkgreen', title: 'Binance Bid', lineWidth: 2 });
+  series['Binance_ask'] = chart.addLineSeries({ color: 'darkred', title: 'Binance Ask', lineWidth: 2 });
+  series['Kraken_bid']  = chart.addLineSeries({ color: 'lightgreen', title: 'Kraken Bid', lineWidth: 2 });
+  series['Kraken_ask']  = chart.addLineSeries({ color: 'lightcoral', title: 'Kraken Ask', lineWidth: 2 });
+  series['Coinbase_bid'] = chart.addLineSeries({ color: 'deepskyblue', title: 'Coinbase Bid', lineWidth: 2 });
+  series['Coinbase_ask'] = chart.addLineSeries({ color: 'violet', title: 'Coinbase Ask', lineWidth: 2 });
 
   // add EventSource to receive ws updates
   const evtSrc = new EventSource('/ticker-events');
