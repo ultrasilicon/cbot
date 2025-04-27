@@ -17,8 +17,8 @@
 using json = nlohmann::json;
 
 Cbot::Cbot()
-    : base_asset_("BTC")
-    , quote_asset_("USDT")
+    : base_asset_("SOL")
+    , quote_asset_("USD")
     , running_(true)
 {
     exchanges_.push_back("Kraken");
@@ -71,6 +71,7 @@ void Cbot::start_services() {
     }
 
     for (const auto &exchange : exchanges_) {
+        LOG_INFO("Starting " + exchange + " feed for " + base_asset_ + "/" + quote_asset_);
         Feed* feed = (exchange == "Kraken")
                    ? new KrakenFeed(base_asset_, quote_asset_)
                    : (exchange == "Binance")
@@ -108,6 +109,7 @@ void Cbot::stop_services() {
 }
 
 void Cbot::restart_services() {
+    LOG_INFO("Restarting services with new base/quote assets");
     stop_services();
     start_services();
 }
@@ -132,7 +134,7 @@ void Cbot::render_tui() {
               << "\n\n";
 
     std::cout << std::left << std::setw(12) << "Exchange"
-              << std::setw(12) << "Symbol"
+              << std::setw(12) << "Market"
               << std::setw(12) << "Price"
               << std::setw(12) << "MA(10s)"
               << std::setw(12) << "MA(30s)\n";

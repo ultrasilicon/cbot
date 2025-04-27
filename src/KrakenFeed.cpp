@@ -1,5 +1,6 @@
 #include "KrakenFeed.hpp"
 #include "Utils.hpp"
+#include "Logger.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
 
@@ -7,19 +8,27 @@ using json = nlohmann::json;
 namespace asio = boost::asio;
 
 KrakenFeed::KrakenFeed(const std::string &base_asset, const std::string &quote_asset)
-    : Feed(base_asset, quote_asset, boost::asio::ssl::context::tlsv12_client)
+    : Feed(
+        cbot::to_upper_copy(base_asset),
+        cbot::to_upper_copy(quote_asset),
+        boost::asio::ssl::context::tlsv12_client
+    )
 {
 }
 
 KrakenFeed::~KrakenFeed()
 {
+    LOG_INFO("Stopping Kraken feed for " + base_asset_ + "/" + quote_asset_);
     ioc_.stop();
     if (io_thread_.joinable())
         io_thread_.join();
+    LOG_INFO("> Kraken feed stopped");
 }
 
 void KrakenFeed::start(BookTickerUpdateCallback callback)
 {
+    LOG_INFO("Starting Kraken feed for " + base_asset_ + "/" + quote_asset_);
+
     callback_ = callback;
     ws_.connect("ws.kraken.com", "443", "/v2",
                 cbot::bind(&KrakenFeed::on_connected, this));
@@ -28,9 +37,10 @@ void KrakenFeed::start(BookTickerUpdateCallback callback)
 
 void KrakenFeed::on_connected(boost::system::error_code ec)
 {
+    LOG_INFO("Connected to Kraken WebSocket");
     if (ec)
     {
-        std::cerr << "Kraken connection error: " << ec.message() << "\n";
+        LOG_ERROR("Kraken connection error: " + ec.message());
         return;
     }
 
@@ -41,15 +51,17 @@ void KrakenFeed::on_connected(boost::system::error_code ec)
         {"symbol", {base_asset_ + "/" + quote_asset_}}
     };
     std::string msg = j.dump();
+    LOG_INFO("Subscribing to Kraken ticker channel: " + msg);
 
     ws_.write(msg, cbot::bind(&KrakenFeed::on_write, this));
 }
 
 void KrakenFeed::on_write(boost::system::error_code ec, std::size_t size)
 {
+    LOG_INFO("Subscribed to Kraken ticker channel");
     if (ec)
     {
-        std::cerr << "Kraken write error: " << ec.message() << "\n";
+        LOG_ERROR("Kraken write error: " + ec.message());
         return;
     }
     ws_.read(cbot::bind(&KrakenFeed::on_read, this));
@@ -59,7 +71,7 @@ void KrakenFeed::on_read(boost::system::error_code ec, std::size_t size, const s
 {
     if (ec)
     {
-        std::cerr << "Kraken read error: " << ec.message() << "\n";
+        LOG_ERROR("Kraken read error: " + ec.message());
         return;
     }
     try
@@ -91,13 +103,13 @@ void KrakenFeed::on_read(boost::system::error_code ec, std::size_t size, const s
             }
             else
             {
-                std::cerr << "Kraken ticker 'data' is not an array: " << j.dump() << "\n";
+                LOG_ERROR("Kraken ticker 'data' is not an array: " + j.dump());
             }
         }
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Kraken JSON parse error: " << e.what() << "\n";
+        LOG_ERROR(std::string("Kraken JSON parse error: ") + e.what());
     }
     ws_.read(cbot::bind(&KrakenFeed::on_read, this));
 }

@@ -6,6 +6,7 @@
 #include <map>
 #include <mutex>
 #include <atomic>
+#include "Logger.hpp"
 #include "BookTicker.hpp"
 #include "Feed.hpp"
 #include "ChartServer.hpp"
