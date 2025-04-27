@@ -1,6 +1,7 @@
 #include "BinanceFeed.hpp"
 #include "BookTicker.hpp"
 #include "Utils.hpp"
+#include "Logger.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <cctype>
@@ -15,13 +16,16 @@ BinanceFeed::BinanceFeed(const std::string &base_asset, const std::string &quote
 
 BinanceFeed::~BinanceFeed()
 {
+    LOG_INFO("Stopping Binance feed for " + base_asset_ + "/" + quote_asset_);
     ioc_.stop();
     if (io_thread_.joinable())
         io_thread_.join();
+    LOG_INFO("Binance feed stopped");
 }
 
 void BinanceFeed::start(BookTickerUpdateCallback callback)
 {
+    LOG_INFO("Starting Binance feed for " + base_asset_ + "/" + quote_asset_);
     callback_ = callback;
     ws_.connect("stream.binance.us", "9443", "/ws",
                 cbot::bind(&BinanceFeed::on_connected, this));
@@ -30,9 +34,10 @@ void BinanceFeed::start(BookTickerUpdateCallback callback)
 
 void BinanceFeed::on_connected(boost::system::error_code ec)
 {
+    LOG_INFO("Connected to Binance WebSocket");
     if (ec)
     {
-        std::cerr << "Binance connection error: " << ec.message() << "\n";
+        LOG_ERROR("Binance connection error: " + ec.message());
         return;
     }
 
@@ -49,14 +54,16 @@ void BinanceFeed::on_connected(boost::system::error_code ec)
     j["id"] = 1;
     std::string msg = j.dump();
 
+    LOG_INFO("Subscribing to Binance ticker channel: " + msg);
     ws_.write(msg, cbot::bind(&BinanceFeed::on_write, this));
 }
 
 void BinanceFeed::on_write(boost::system::error_code ec, std::size_t size)
 {
+    LOG_INFO("Subscribed to Binance ticker channel");
     if (ec)
     {
-        std::cerr << "Binance write error: " << ec.message() << "\n";
+        LOG_ERROR("Binance write error: " + ec.message());
         return;
     }
     ws_.read(cbot::bind(&BinanceFeed::on_read, this));
@@ -66,7 +73,7 @@ void BinanceFeed::on_read(boost::system::error_code ec, std::size_t size, const 
 {
     if (ec)
     {
-        std::cerr << "Binance read error: " << ec.message() << "\n";
+        LOG_ERROR("Binance read error: " + ec.message());
         return;
     }
 
@@ -90,7 +97,7 @@ void BinanceFeed::on_read(boost::system::error_code ec, std::size_t size, const 
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Binance JSON parse error: " << e.what() << "\n";
+        LOG_ERROR(std::string("Binance JSON parse error: ") + e.what());
     }
     ws_.read(cbot::bind(&BinanceFeed::on_read, this));
 }
