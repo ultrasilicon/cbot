@@ -130,7 +130,7 @@ void Cbot::render_tui() {
     std::lock_guard<std::mutex> lk(data_mtx_);
 
     std::cout << "\033[2J\033[H";
-    std::cout << std::string(40, '=') << "cbot TUI" << std::string(40, '=') << "\n";
+    std::cout << std::string(38, '=') << " cbot TUI " << std::string(38, '=') << "\n";
     std::cout << "Base Asset: "   << base_asset_ << "    "
               << "Quote Asset: "  << quote_asset_ << "              "
               << "Arb Detected: " << (find_arb(exch_data_map_) ? GREEN_DOT : RED_DOT)
@@ -140,8 +140,8 @@ void Cbot::render_tui() {
               << std::setw(12) << "Market"
               << std::setw(12) << "Price"
               << std::setw(12) << "MA(10s)"
-              << std::setw(12) << "MA(30s)\n";
-    std::cout << std::string(70, '-') << "\n";
+              << std::setw(12) << "MA(30s)" << std::endl;
+    std::cout << std::string(86, '-') << "\n";
 
     for (auto &entry : exch_data_map_) {
         const auto &[exchange, ticks] = entry;
@@ -159,7 +159,7 @@ void Cbot::render_tui() {
                   << "\n";
     }
 
-    std::cout << "\nMenu:\n"
+    std::cout << "\n\nMenu:\n"
               << "   (" << static_cast<char>(MenuOption::SetBaseAsset)   << ") Set base asset\n"
               << "   (" << static_cast<char>(MenuOption::SetQuoteAsset)  << ") Set quote asset\n"
               << "   (" << static_cast<char>(MenuOption::AddExchange)    << ") Add exchange\n"
