@@ -1,6 +1,6 @@
 # cbot
 
-A CEX analytics bot in C++ for fun
+A crypto CEX feed data visualization tool in C++ for fun
 
 
 ## Screenshots
